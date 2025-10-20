@@ -1,1 +1,1 @@
-MY_APPS = ['apps.vehicle','apps.customer']
+MY_APPS = ['apps.vehicle','apps.customer','apps.booking']
