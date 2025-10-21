@@ -5,16 +5,15 @@ from .models import Customer
 
 class RegisterSerializer(serializers.ModelSerializer):
     password =serializers.CharField(write_only=True)
-    email = serializers.EmailField(read_only=True)
+
 
     class Meta:
         model = User
-        fields = ('username','email','password')
+        fields = ('username','password')
 
     def create(self, validated_data):
         user =User.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
             password=validated_data['password']
         )
         Customer.objects.create(user=user)
@@ -29,5 +28,5 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['username', 'email', 'phone_number', 'address', 'license_image', 'driver_licens_number', 'date_of_birth',]
+        fields = ['user', 'phone_number', 'address', 'license_image', 'driver_licens_number', 'date_of_birth',]
 
