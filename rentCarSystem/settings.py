@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_filters',
 
-
+    'django_extensions',
 ]
 INSTALLED_APPS += MY_APPS
 

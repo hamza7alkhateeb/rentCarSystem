@@ -1,10 +1,10 @@
-from rest_framework.routers import DefaultRouter
-
-from .views import VehicleView,VehicleDetailView
-from django.contrib import admin
 from django.urls import path
+from .views import VehicleView, VehicleDetailView, AvailableVehiclesAPIView
 
 urlpatterns = [
-    path('vehicle',VehicleView.as_view(),name='vehicle' ),
-    path('vehicle/<int:pk>',VehicleDetailView.as_view(),name='vehicle_details' ),
+    
+    path('', VehicleView.as_view(), name='vehicle-list-create'),
+    path('available/', AvailableVehiclesAPIView.as_view(), name='available-vehicles'),
+    path('<int:pk>/', VehicleDetailView.as_view(), name='vehicle-detail'),
+    
 ]
