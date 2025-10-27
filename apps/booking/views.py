@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django.db import transaction
 from rest_framework.views import APIView
 from .models import Booking
-from .serializers import BookingSerializer, CreateUserCustomerBookingSerializer
+from .serializers import BookingSerializer, VersionOneCreateUserCustomerBookingSerializer, VersionTwoCreateUserCustomerBookingSerializer
 from apps.customer.models import Customer
 
 
@@ -74,11 +74,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-class CreateUserCustomerBookingView(APIView):
+class VersionOneCreateUserCustomerBookingView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request):
-        serializer = CreateUserCustomerBookingSerializer(data=request.data)
+        serializer = VersionOneCreateUserCustomerBookingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # Use a transaction to ensure atomic creation
@@ -119,3 +119,13 @@ class CreateUserCustomerBookingView(APIView):
             {"user": user_data, "customer": customer_data, "booking": booking_data},
             status=status.HTTP_201_CREATED
         )
+
+
+
+class VersionTwoCreateUserCustomerBookingView(APIView):
+    def post(self, request):
+        serializer = VersionTwoCreateUserCustomerBookingSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.save()
+            return Response({"message": "Booking created successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

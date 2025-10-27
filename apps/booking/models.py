@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.serializers import ValidationError
 from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
 
