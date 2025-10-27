@@ -1,24 +1,36 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from datetime import date
 
 class Vehicle(models.Model):
-    VEHICLE_TYPE_CHOICES = [
-        ('car', 'Car'),
-        ('van', 'Van'),
-        ('truck', 'Truck'),
-        ('motorbike', 'Motorbike'),
-    ]
+    class VehicleType(models.TextChoices):
+        CAR = 'car', 'Car'
+        VAN = 'van', 'Van'
+        TRUCK = 'truck', 'Truck'
+        MOTORBIKE = 'motorbike', 'Motorbike'
 
     brand = models.CharField(max_length=100)
-    model = models.CharField(max_length=100, blank=True, null=True)
+    model = models.CharField(max_length=100)
     year = models.PositiveSmallIntegerField()
-    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES)
-    daily_rate = models.DecimalField(max_digits=8, decimal_places=2)
-    plate_number = models.CharField(max_length=20, unique=True)
+    vehicle_type = models.CharField(max_length=20,choices=VehicleType.choices, default=VehicleType.CAR)
+    daily_rate = models.DecimalField(max_digits=8,decimal_places=2)
+    plate_number = models.CharField(max_length=20,unique=True)
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='vehicles/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        current_year = date.today().year
+        if self.year > current_year:
+            raise ValidationError("Year cannot be in the future.")
+
+        if self.daily_rate <= 0 :
+            raise ValidationError("Daily rate must be greater than zero.")
 
     def __str__(self):
-        return f"{self.brand} {self.model or ''} {self.year} ({self.plate_number})"
+        return f"{self.brand} {self.model} ({self.plate_number})"
+
 
     @classmethod
     def available_in_period(cls, start_date, end_date, vehicle_type=None, brand=None):
