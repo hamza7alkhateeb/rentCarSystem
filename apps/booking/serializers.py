@@ -4,14 +4,14 @@ from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.core.exceptions import ValidationError
-
-
+from rest_framework.serializers import ValidationError
+from apps.authentication.serializers import UserSerializer
+from apps.customer.serializers import CustomerSerializer
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
-        read_only_fields = ['total_price', 'created_at', 'updated_at', 'status','customer']
+        read_only_fields = ['total_price', 'created_at', 'updated_at', 'status','customer',"vehicle"]
 
     def validate(self, data):
         start_date = data.get('start_date')
@@ -29,11 +29,11 @@ class BookingSerializer(serializers.ModelSerializer):
             if instance:
                 overlapping = overlapping.exclude(pk=instance.pk)
             if overlapping.exists():
-                raise serializers.ValidationError("This vehicle is not available in the selected period.")
+                raise ValidationError({"error": "This vehicle is not available in the selected period."})
         return data
 
 
-class CreateUserCustomerBookingSerializer(serializers.Serializer):
+class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
     # User fields
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
@@ -59,19 +59,19 @@ class CreateUserCustomerBookingSerializer(serializers.Serializer):
         vehicle = data.get('vehicle')
 
         if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError({"username": "Username already exists."})
+            raise ValidationError({"username": "Username already exists."})
 
         if Customer.objects.filter(driver_licens_number=driver_licens_number).exists():
-            raise serializers.ValidationError({"driver_licens_number": "Driver license number already exists."})
+            raise ValidationError({"driver_licens_number": "Driver license number already exists."})
 
         if start_date and end_date and end_date < start_date:
-            raise serializers.ValidationError({"end_date": "End date must be on or after start date."})
+            raise ValidationError({"end_date": "End date must be on or after start date."})
 
         if vehicle and start_date and end_date:
             vehicle_pk = vehicle.pk if hasattr(vehicle, "pk") else int(vehicle)
             is_available = Vehicle.available_in_period(start_date, end_date).filter(pk=vehicle_pk).exists()
             if not is_available:
-                raise serializers.ValidationError({"vehicle": "Selected vehicle is not available for the given period."})
+                raise ValidationError({"vehicle": "Selected vehicle is not available for the given period."})
 
         return data
 
@@ -104,6 +104,44 @@ class CreateUserCustomerBookingSerializer(serializers.Serializer):
             try:
                 booking.save()
             except ValidationError as e:
-                raise serializers.ValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
+                raise ValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
 
         return {'user': user, 'customer': customer, 'booking': booking}
+
+
+
+class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
+    user= UserSerializer()
+    customer = CustomerSerializer()
+    booking = BookingSerializer()
+    vehicle_id = serializers.IntegerField()
+    # vehicle = VehicleSerializer()
+    def create(self,validated_data):
+        vehicle_id = validated_data.pop("vehicle_id")
+        try:
+            vehicle = Vehicle.objects.get(id=vehicle_id)
+        except Vehicle.DoesNotExist:
+            raise ValidationError({"vehicle": "Vehicle not found."})
+        with transaction.atomic():
+            user_data = validated_data.pop('user')
+            user_serializer = UserSerializer(data=user_data)
+            user_serializer.is_valid(raise_exception=True)
+            user=user_serializer.save()
+
+            customer_data = validated_data.pop("customer")
+
+            customer_serializer = CustomerSerializer(data=customer_data)
+            customer_serializer.is_valid(raise_exception=True)
+            customer = customer_serializer.save(user=user)
+
+            booking_data = validated_data.pop("booking")
+
+            booking_serializer = BookingSerializer(data=booking_data)
+            booking_serializer.is_valid(raise_exception=True)
+            booking = booking_serializer.save(vehicle=vehicle,customer=customer)
+
+        return {
+            "user": user,
+            "customer": customer,
+            "booking": booking
+        }
