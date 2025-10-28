@@ -11,7 +11,7 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = "__all__"
-        read_only_fields = ['total_price', 'created_at', 'updated_at', 'status','customer',"vehicle"]
+        read_only_fields = ['total_price', 'created_at', 'updated_at', 'status','customer']
 
     def validate(self, data):
         start_date = data.get('start_date')
@@ -114,14 +114,8 @@ class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
     user= UserSerializer()
     customer = CustomerSerializer()
     booking = BookingSerializer()
-    vehicle_id = serializers.IntegerField()
-    # vehicle = VehicleSerializer()
+
     def create(self,validated_data):
-        vehicle_id = validated_data.pop("vehicle_id")
-        try:
-            vehicle = Vehicle.objects.get(id=vehicle_id)
-        except Vehicle.DoesNotExist:
-            raise ValidationError({"vehicle": "Vehicle not found."})
         with transaction.atomic():
             user_data = validated_data.pop('user')
             user_serializer = UserSerializer(data=user_data)
@@ -136,9 +130,12 @@ class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
 
             booking_data = validated_data.pop("booking")
 
+            if isinstance(booking_data.get("vehicle"), Vehicle):
+                booking_data["vehicle"] = booking_data["vehicle"].id
+
             booking_serializer = BookingSerializer(data=booking_data)
             booking_serializer.is_valid(raise_exception=True)
-            booking = booking_serializer.save(vehicle=vehicle,customer=customer)
+            booking = booking_serializer.save(customer=customer)
 
         return {
             "user": user,
