@@ -92,7 +92,13 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
         with transaction.atomic():
             user = User.objects.create_user(username=username, password=password)
-            customer = Customer.objects.create(user=user, **customer_data)
+
+            customer= Customer.objects.get(user=user)
+            for field, value in customer_data.items():
+                setattr(customer, field, value)
+            customer.save()
+
+
             booking = Booking(
                 customer=customer,
                 vehicle=vehicle,
@@ -115,18 +121,20 @@ class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
     customer = CustomerSerializer()
     booking = BookingSerializer()
 
-    def create(self,validated_data):
+    def create(self, validated_data):
         with transaction.atomic():
             user_data = validated_data.pop('user')
             user_serializer = UserSerializer(data=user_data)
             user_serializer.is_valid(raise_exception=True)
-            user=user_serializer.save()
+            user = user_serializer.save()
 
             customer_data = validated_data.pop("customer")
 
-            customer_serializer = CustomerSerializer(data=customer_data)
-            customer_serializer.is_valid(raise_exception=True)
-            customer = customer_serializer.save(user=user)
+            customer = Customer.objects.get(user=user)
+
+            for field, value in customer_data.items():
+                setattr(customer, field, value)
+            customer.save()
 
             booking_data = validated_data.pop("booking")
 
