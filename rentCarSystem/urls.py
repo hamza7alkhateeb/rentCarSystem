@@ -8,7 +8,7 @@ urlpatterns = [
 
     path('api/customer/', include('apps.customer.urls')),
     path('api/auth/', include('apps.authentication.urls')),
-    path('api/vehicles/', include('apps.vehicle.urls')),
+    path('api/', include('apps.vehicle.urls')),
     path('api/', include('apps.booking.urls')),
 ]
 
