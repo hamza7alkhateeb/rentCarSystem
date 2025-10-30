@@ -35,6 +35,13 @@ class BookingViewSet(viewsets.ModelViewSet):
             customer = getattr(user, "customer", None)
             if not customer:
                 raise serializers.ValidationError("User does not have a customer profile.")
+            
+            missing_fields = customer.get_incomplete_fields()
+            if not customer.is_profile_complete():
+                raise serializers.ValidationError(
+                    {"profile": f"Please complete the following fields before creating a new booking: {', '.join(missing_fields)}."}
+                )
+            
             serializer.save(customer=customer)
 
 
