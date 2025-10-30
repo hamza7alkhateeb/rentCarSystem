@@ -74,6 +74,20 @@ class BookingViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+
+    def perform_update(self,serializer):
+        booking = self.get_object()
+        user = self.request.user
+
+        if not user.is_staff:
+            if booking.status != Booking.BookingStatus.PENDING:
+                raise serializers.ValidationError(
+                    {"error": "You can only update bookings that are still pending."}
+                )
+
+        serializer.save()
+
+
 class VersionOneCreateUserCustomerBookingView(APIView):
     permission_classes = [IsAdminUser]
 
