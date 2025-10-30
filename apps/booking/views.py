@@ -94,6 +94,24 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         serializer.save()
 
+    @action(detail=True, methods=['patch'], url_path='approve', permission_classes=[IsAdminUser])
+    def approve_booking(self, request, pk=None):
+        booking = self.get_object()
+        if booking.status != Booking.BookingStatus.PENDING:
+            return Response({"error": "Booking is not pending."}, status=status.HTTP_400_BAD_REQUEST)
+        booking.status = Booking.BookingStatus.CONFIRMED
+        booking.save()
+        return Response({"message": "Booking approved successfully."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['patch'], url_path='reject', permission_classes=[IsAdminUser])
+    def reject_booking(self, request, pk=None):
+        booking = self.get_object()
+        if booking.status != Booking.BookingStatus.PENDING:
+            return Response({"error": "Booking is not pending."}, status=status.HTTP_400_BAD_REQUEST)
+        booking.status = Booking.BookingStatus.CANCELLED
+        booking.save()
+        return Response({"message": "Booking rejected successfully."}, status=status.HTTP_200_OK)
+
 
 class VersionOneCreateUserCustomerBookingView(APIView):
     permission_classes = [IsAdminUser]
