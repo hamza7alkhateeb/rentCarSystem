@@ -66,11 +66,16 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
         if start_date and end_date and end_date < start_date:
             raise ValidationError({"end_date": "End date must be on or after start date."})
-
         if vehicle and start_date and end_date:
-            vehicle_pk = vehicle.pk if hasattr(vehicle, "pk") else int(vehicle)
-            is_available = Vehicle.available_in_period(start_date, end_date).filter(pk=vehicle_pk).exists()
-            if not is_available:
+            vehicle_id = vehicle.pk if isinstance(vehicle, Vehicle) else int(vehicle)
+            is_conflicting = Booking.objects.filter(
+                vehicle_id=vehicle_id,
+                status__in=[Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED],
+                start_date__lt=end_date,
+                end_date__gt=start_date
+            ).exists()
+
+            if is_conflicting:
                 raise ValidationError({"vehicle": "Selected vehicle is not available for the given period."})
 
         return data
