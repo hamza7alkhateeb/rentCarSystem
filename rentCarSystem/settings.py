@@ -39,11 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
-
+    'django_celery_beat',
     'django_extensions',
 ]
 INSTALLED_APPS += MY_APPS
@@ -160,7 +159,7 @@ CELERY_TIMEZONE = 'Asia/Amman'
 
 CELERY_BEAT_SCHEDULE = {
     'update_status': {
-        'task': 'update_status',
+        'task': 'booking.tasks.update_status',
         'schedule':timedelta(hours=24)
     }
 }

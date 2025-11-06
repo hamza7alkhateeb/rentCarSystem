@@ -1,8 +1,10 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Customer
+from .repository import CustomerRepo
 from .serializers import CustomerSerializer
+
+customer_repo = CustomerRepo()
 
 class CustomerViewSet(viewsets.ViewSet):
     permission_classes_by_action = {
@@ -14,17 +16,28 @@ class CustomerViewSet(viewsets.ViewSet):
         try:
             return [permission() for permission in self.permission_classes_by_action[self.action]]
         except KeyError:
-            return [permission() for permission in []]
+            return []
 
     def profile(self, request):
-        customer = Customer.objects.get(user=request.user)
+        customer = customer_repo.get_by_user(request.user)
+        if not customer:
+            return Response({"error": "Customer profile not found"}, status=404)
+
         serializer = CustomerSerializer(customer)
         return Response(serializer.data)
 
     def update_profile(self, request):
-        customer = Customer.objects.get(user=request.user)
+        customer = customer_repo.get_by_user(request.user)
+        if not customer:
+            return Response({"error": "Customer profile not found"}, status=404)
+
         serializer = CustomerSerializer(customer, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Profile updated successfully!"})
+            updated_customer = customer_repo.update(customer, serializer.validated_data)
+            return Response({
+                "message": "Profile updated successfully!",
+                "data": CustomerSerializer(updated_customer).data
+            })
+
         return Response(serializer.errors, status=400)
+
