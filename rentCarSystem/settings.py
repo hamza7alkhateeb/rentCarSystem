@@ -13,6 +13,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from apps.my_apps import MY_APPS
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j4d_!7d5@7ar9n!co9!pbk7!#pd9j%ac@g*ea-kd=ca8(wvjhy'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -82,12 +83,12 @@ WSGI_APPLICATION = 'rentCarSystem.wsgi.application'
 
 DATABASES = {
     'default': {
-         'ENGINE': 'django.db.backends.postgresql',
-         'NAME': 'rent_car_db',
-         'USER': 'postgres',
-         'PASSWORD': 'pass',
-         'HOST': 'localhost',
-         'PORT': '5432',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', cast=int),
     }
 }
 
