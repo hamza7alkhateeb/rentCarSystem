@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.booking.models import Booking,PaymentMethod
+from .models import Booking
 from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
 from django.contrib.auth.models import User
@@ -7,6 +7,9 @@ from django.db import transaction
 from rest_framework.serializers import ValidationError
 from apps.authentication.serializers import UserSerializer
 from apps.customer.serializers import CustomerSerializer
+from .enums import BookingStatus, PaymentMethod
+
+
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
@@ -22,7 +25,7 @@ class BookingSerializer(serializers.ModelSerializer):
         if start_date and end_date and vehicle:
             overlapping = Booking.objects.filter(
                 vehicle=vehicle,
-                status__in=[Booking.BookingStatus.PENDING.value, Booking.BookingStatus.CONFIRMED.value],
+                status__in=[status.value for status in BookingStatus if status in [BookingStatus.PENDING, BookingStatus.CONFIRMED]],
                 start_date__lte=end_date,
                 end_date__gte=start_date
             )
@@ -66,11 +69,12 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
         if start_date and end_date and end_date < start_date:
             raise ValidationError({"end_date": "End date must be on or after start date."})
+
         if vehicle and start_date and end_date:
             vehicle_id = vehicle.pk if isinstance(vehicle, Vehicle) else int(vehicle)
             is_conflicting = Booking.objects.filter(
                 vehicle_id=vehicle_id,
-                status__in=[Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED],
+                status__in=[BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value],
                 start_date__lt=end_date,
                 end_date__gt=start_date
             ).exists()
@@ -97,32 +101,23 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
         with transaction.atomic():
             user = User.objects.create_user(username=username, password=password)
-
-            customer= Customer.objects.get(user=user)
-            for field, value in customer_data.items():
-                setattr(customer, field, value)
-            customer.save()
-
+            customer = Customer.objects.create(user=user, **customer_data)
 
             booking = Booking(
                 customer=customer,
                 vehicle=vehicle,
                 start_date=start_date,
                 end_date=end_date,
-                payment_method=validated_data.get('payment_method', Booking.PaymentMethod.CASH),
+                payment_method=validated_data.get('payment_method', PaymentMethod.CASH.value),
                 notes=validated_data.get('notes', '')
             )
-            try:
-                booking.save()
-            except ValidationError as e:
-                raise ValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
+            booking.save()
 
         return {'user': user, 'customer': customer, 'booking': booking}
 
 
-
 class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
-    user= UserSerializer()
+    user = UserSerializer()
     customer = CustomerSerializer()
     booking = BookingSerializer()
 
@@ -134,21 +129,17 @@ class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
             user = user_serializer.save()
 
             customer_data = validated_data.pop("customer")
-
-            customer = Customer.objects.get(user=user)
-
-            for field, value in customer_data.items():
-                setattr(customer, field, value)
-            customer.save()
+            customer = Customer.objects.create(user=user, **customer_data)
 
             booking_data = validated_data.pop("booking")
-
-            if isinstance(booking_data.get("vehicle"), Vehicle):
-                booking_data["vehicle"] = booking_data["vehicle"].id
-
-            booking_serializer = BookingSerializer(data=booking_data)
-            booking_serializer.is_valid(raise_exception=True)
-            booking = booking_serializer.save(customer=customer)
+            booking = Booking.objects.create(
+                customer=customer,
+                vehicle=booking_data['vehicle'],
+                start_date=booking_data['start_date'],
+                end_date=booking_data['end_date'],
+                payment_method=booking_data.get('payment_method', PaymentMethod.CASH.value),
+                notes=booking_data.get('notes', '')
+            )
 
         return {
             "user": user,
