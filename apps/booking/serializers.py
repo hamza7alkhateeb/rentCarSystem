@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.booking.models import Booking
+from apps.booking.models import Booking,PaymentMethod
 from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
 from django.contrib.auth.models import User
@@ -48,7 +48,7 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
     vehicle = serializers.PrimaryKeyRelatedField(queryset=Vehicle.objects.all())
     start_date = serializers.DateField()
     end_date = serializers.DateField()
-    payment_method = serializers.ChoiceField(choices=Booking.PaymentMethod.choices)
+    payment_method = serializers.ChoiceField(choices=[(method.value, method.name.title()) for method in PaymentMethod])
     notes = serializers.CharField(allow_blank=True, required=False)
 
     def validate(self, data):

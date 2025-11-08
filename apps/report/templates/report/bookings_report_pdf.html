@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #333; padding: 6px; }
+    th { background: #eee; }
+    h2 { text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Bookings Report</h2>
+  <p>Generated at: {{ generated_at }}</p>
+  <p>Total bookings: {{ total_bookings }} — Total revenue: {{ total_revenue }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Customer</th>
+        <th>Vehicle</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Price</th>
+        <th>Payment</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ b.customer.user.username }}</td>
+        <td>{{ b.vehicle }}</td>
+        <td>{{ b.start_date }}</td>
+        <td>{{ b.end_date }}</td>
+        <td>{{ b.total_price }}</td>
+        <td>{{ b.payment_method }}</td>
+        <td>{{ b.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

@@ -1,0 +1,12 @@
+from enum import Enum
+
+class BookingStatus(Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+
+
+class PaymentMethod(Enum):
+    CASH = "cash"
+    CLIQ = "cliq"

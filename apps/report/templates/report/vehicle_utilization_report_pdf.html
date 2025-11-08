@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { 
+      font-family: DejaVu Sans, sans-serif; 
+      font-size: 12px; 
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 10px;
+    }
+    th, td { 
+      border: 1px solid #333; 
+      padding: 6px; 
+      text-align: center;
+    }
+    th { 
+      background: #eee; 
+    }
+    h2 { 
+      text-align: center; 
+    }
+    p { 
+      margin: 4px 0; 
+    }
+  </style>
+</head>
+<body>
+  <h2>Vehicle Utilization Report - {{ month }}</h2>
+  <p>User: {{ user_name }}</p>
+  <p>Generated at: {{ generated_at|date:"Y-m-d H:i" }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Vehicle</th>
+        <th>Booked Days</th>
+        <th>Utilization (%)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in vehicles_data %}
+      <tr>
+        <td>{{ v.vehicle }}</td>
+        <td>{{ v.booked_days }}</td>
+        <td>{{ v.utilization }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

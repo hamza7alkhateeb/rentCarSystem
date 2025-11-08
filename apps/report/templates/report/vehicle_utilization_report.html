@@ -1,0 +1,26 @@
+{% extends "report/base.html" %}
+{% block title %}Vehicle Utilization Report{% endblock %}
+{% block content %}
+<h2>Vehicle Utilization - {{ month }}</h2>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Vehicle</th>
+      <th>Booked Days</th>
+      <th>Utilization (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in vehicles_data %}
+    <tr>
+      <td>{{ v.vehicle }}</td>
+      <td>{{ v.booked_days }}</td>
+      <td>{{ v.utilization }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{% url 'report:vehicle_utilization_pdf' %}" class="btn btn-success">Download PDF</a>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% block title %}Bookings Report{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Bookings Report</h3>
+  <div>
+    <a href="{% url 'report:bookings_report_pdf' %}?start_date={{ filters.start_date }}&end_date={{ filters.end_date }}&status={{ filters.status }}" class="btn btn-primary">Download PDF</a>
+  </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-auto">
+    <input type="date" name="start_date" value="{{ filters.start_date }}" class="form-control" placeholder="Start date">
+  </div>
+  <div class="col-auto">
+    <input type="date" name="end_date" value="{{ filters.end_date }}" class="form-control" placeholder="End date">
+  </div>
+  <div class="col-auto">
+<select name="status" class="form-control">
+  <option value="">All statuses</option>
+  {% for value,label in status_choices %}
+    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+  {% endfor %}
+</select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-secondary">Filter</button>
+  </div>
+</form>
+
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5>Total Bookings</h5>
+      <p class="display-6">{{ total_bookings }}</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5>Total Revenue</h5>
+      <p class="display-6">{{ total_revenue }}</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5>By Status</h5>
+        <ul class="list-unstyled mb-0">
+          {% for s in by_status %}
+            <li>{{ s.status }}: {{ s.count }}</li>
+          {% endfor %}
+        </ul>
+    </div>
+  </div>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Customer</th>
+      <th>Vehicle</th>
+      <th>Start</th>
+      <th>End</th>
+      <th>Price</th>
+      <th>Payment</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in bookings %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ b.customer.user.username }}</td>
+        <td>{{ b.vehicle }}</td>
+        <td>{{ b.start_date }}</td>
+        <td>{{ b.end_date }}</td>
+        <td>{{ b.total_price }}</td>
+        <td>{{ b.payment_method }}</td>
+        <td>{{ b.status }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8">No bookings found for the selected filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -3,31 +3,33 @@ from django.utils import timezone
 from rest_framework.serializers import ValidationError
 from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
+from apps.booking.enums import BookingStatus,PaymentMethod
 
 class Booking(models.Model):
-    class BookingStatus(models.TextChoices):
-        PENDING = "pending", "Pending"
-        CONFIRMED = "confirmed", "Confirmed"
-        CANCELLED = "cancelled", "Cancelled"
-        COMPLETED = "completed", "Completed"
-
-    class PaymentMethod(models.TextChoices):
-        CASH = "cash", "Cash"
-        CLIQ = "cliq", "Cliq"
-
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='bookings')
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='bookings')
     start_date = models.DateField()
     end_date = models.DateField()
     total_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    status = models.CharField(max_length=20, choices=BookingStatus.choices, default=BookingStatus.PENDING)
-    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.CASH)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[(status.value, status.name.title()) for status in BookingStatus],
+        default=BookingStatus.PENDING.value
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=[(method.value, method.name.title()) for method in PaymentMethod],
+        default=PaymentMethod.CASH.value
+    )
+
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
         today = timezone.localdate()
+
         if self.start_date < today:
             raise ValidationError("Start date cannot be in the past.")
         if self.end_date < self.start_date:
@@ -35,13 +37,13 @@ class Booking(models.Model):
 
         overlapping = Booking.objects.filter(
             vehicle=self.vehicle,
-            status__in=[self.BookingStatus.PENDING, self.BookingStatus.CONFIRMED],
+            status__in=[BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value],
             start_date__lte=self.end_date,
             end_date__gte=self.start_date,
-
         )
         if self.pk:
             overlapping = overlapping.exclude(pk=self.pk)
+
         if overlapping.exists():
             raise ValidationError("This vehicle is not available in the selected period.")
 

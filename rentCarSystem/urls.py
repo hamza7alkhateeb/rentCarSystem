@@ -10,6 +10,8 @@ urlpatterns = [
     path('api/auth/', include('apps.authentication.urls')),
     path('api/', include('apps.vehicle.urls')),
     path('api/', include('apps.booking.urls')),
+
+    path('reports/', include('apps.report.urls', namespace='report')),
 ]
 
 
