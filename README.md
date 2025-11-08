@@ -172,7 +172,36 @@ These items ensure a modern, secure, and user-friendly platform:
 * **Front-End Development:** Build a clean and responsive user interface (using **React/Vue** for the customer side and **Bootstrap** for the Admin dashboard).
 * **Advanced Dashboards & Reports:** Provide management dashboards with **deep analytics** and insights on rentals, revenue, fleet utilization, and performance metrics.
 
+### ⚙️ Background Tasks with Celery
+
+The **RentCar System** uses **Celery** to handle background tasks such as automatically updating booking statuses and running scheduled operations without affecting the user experience or system performance.
+
+Celery is connected to **Redis** as a message broker and managed via **Celery Beat** to trigger scheduled tasks automatically.  
+In this project, a scheduled task called `update_status` runs every **24 hours**, checks all confirmed bookings that have ended, and automatically updates their status to **"Completed"** ✅.
+
 ---
+
+#### 💡 How It Works:
+
+- **Celery Worker:** Executes background tasks.
+- **Celery Beat:** Triggers scheduled jobs automatically.
+- **Redis:** Acts as a message broker between Django and Celery.
+- **Task Logic:** Defined inside `tasks.py` in the `Booking` app.
+
+---
+
+#### 🚀 To Run Celery:
+
+1. Make sure **Redis** is running on your machine.
+2. Open **Terminal 1** to run the Worker:
+```bash
+celery -A rentCarSystem worker -l info
+```
+3. Open Terminal 2 to run the Beat:
+```bash
+celery -A rentCarSystem beat -l info
+```
+
 
 **🔶NOTE :** This project is for **educational and training purposes only under the `Sitech` company program**.
 

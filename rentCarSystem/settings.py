@@ -39,11 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
-
+    'django_celery_beat',
     'django_extensions',
 ]
 INSTALLED_APPS += MY_APPS
@@ -150,3 +149,17 @@ REST_FRAMEWORK = {
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),}
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Amman'
+
+CELERY_BEAT_SCHEDULE = {
+    'update_status': {
+        'task': 'booking.tasks.update_status',
+        'schedule':timedelta(hours=24)
+    }
+}
