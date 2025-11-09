@@ -14,18 +14,22 @@ class CustomerSerializer(serializers.ModelSerializer):
             raise ValidationError("Phone number must contain digits only.")
         if not (9 <= len(value) <= 12):
             raise ValidationError("Phone number must be between 9 and 12 digits.")
-
-
-        if Customer.objects.filter(phone_number=value).exists():
+        qs=Customer.objects.filter(phone_number=value)
+        if self.instance:
+            qs=qs.exclude(pk=self.instance.pk)
+        if qs.exists():
             raise ValidationError("This phone number is already registered.")
         return value
 
 
-    def validate_driver_licens_number(self, value):
+    def validate_driver_license_number(self, value):
         if value and len(value) < 6:
             raise ValidationError("Driver license number must be at least 6 characters long.")
-        if Customer.objects.filter(driver_licens_number=value).exists():
-            raise ValidationError("This driver licens number is already registered.")
+        qs = Customer.objects.filter(driver_license_number=value)
+        if self.instance:
+            qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("This driver license number is already registered.")
         return value
 
 
@@ -45,18 +49,18 @@ class CustomerSerializer(serializers.ModelSerializer):
             raise ValidationError("Address is too short.")
         return value
 
-    ####### DON'T Remove ##########################################
 
 
-    # def validate(self, attrs):
-    #     driver_license = attrs.get("driver_licens_number")
-    #     license_image = attrs.get("license_image")
-    #
-    #     if driver_license and not license_image:
-    #         raise ValidationError("License image is required when driver license number is provided.")
-    #     return attrs
 
-    ####### DON'T Remove ##########################################
+    def validate(self, attrs):
+        driver_license = attrs.get("driver_license_number")
+        license_image = attrs.get("license_image")
+
+        if driver_license and not license_image:
+            raise ValidationError("License image is required when driver license number is provided.")
+        return attrs
+
+
 
     def create(self, validated_data):
         user = validated_data.get("user")
