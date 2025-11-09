@@ -1,6 +1,4 @@
 from django.db import models
-from rest_framework.serializers import ValidationError
-from datetime import date
 
 class Vehicle(models.Model):
     class VehicleType(models.TextChoices):
@@ -19,14 +17,6 @@ class Vehicle(models.Model):
     image = models.ImageField(upload_to='vehicles/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        current_year = date.today().year
-        if self.year > current_year:
-            raise ValidationError("Year cannot be in the future.")
-
-        if self.daily_rate <= 0 :
-            raise ValidationError("Daily rate must be greater than zero.")
 
     def __str__(self):
         return f"{self.brand} {self.model} ({self.plate_number})"
