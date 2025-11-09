@@ -164,3 +164,35 @@ CELERY_BEAT_SCHEDULE = {
         'schedule':timedelta(hours=24)
     }
 }
+
+# LOGGER SETTINGS
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'standard': {
+            'format': '[{levelname}] {asctime} {name}: {message}',
+            'style': '{',
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'app.log'),
+            'formatter': 'standard',
+        },
+    },
+
+    'loggers': {
+        '': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+        },
+    },
+}

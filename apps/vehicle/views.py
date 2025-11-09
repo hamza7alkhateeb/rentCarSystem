@@ -1,5 +1,5 @@
 from rest_framework import status
-from .repositories import VehicleRepository
+from .repository import VehicleRepository
 from .serializers import VehicleSerializer
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from django.utils.dateparse import parse_date
@@ -8,6 +8,8 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.decorators import action
+import logging
+logger = logging.getLogger(__name__)
 
 class IsAdminOrIsAuthenticated(BasePermission):
     def has_permission(self, request, view):
@@ -31,23 +33,24 @@ class VehicleViewSet(ViewSet):
         return Response(serializer.data)
     @action(detail=False, methods=['get'],url_path='available')
     def available(self,request):
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        if not start_date or not end_date:
+        start = request.query_params.get('start_date')
+        end = request.query_params.get('end_date')
+
+        if not start or not end:
             raise ValidationError("Both start_date and end_date are required. Format: YYYY-MM-DD.")
-        if start_date and end_date:
-            start_date = parse_date(start_date)
-            end_date = parse_date(end_date)
-            today = timezone.now().date()
 
-            if not start_date or not end_date:
-                raise ValidationError("Invalid date format. Use YYYY-MM-DD.")
+        start_date = parse_date(start)
+        end_date = parse_date(end)
 
-            if start_date < today or end_date < today:
-                raise ValidationError("Dates cannot be in the past.")
+        if not start_date or not end_date:
+            raise ValidationError("Invalid date format. Use YYYY-MM-DD.")
 
-            if end_date < start_date:
-                raise ValidationError("end_date cannot be before start_date.")
+        today = timezone.now().date()
+        if start_date < today or end_date < today:
+            raise ValidationError("Dates cannot be in the past.")
+
+        if end_date < start_date:
+            raise ValidationError("end_date cannot be before start_date.")
         filters = {
             key: request.query_params.get(key)
             for key in ['vehicle_type', 'model', 'brand']
@@ -85,5 +88,8 @@ class VehicleViewSet(ViewSet):
         vehicle = self.repository.get_by_id(pk)
         if not vehicle:
             return Response({'detail': 'Vehicle not found.'}, status=status.HTTP_404_NOT_FOUND)
+        logger.warning(
+            f"Vehicle with plate number-{vehicle.plate_number} deleted by {request.user.username}"
+        )
         self.repository.delete(vehicle)
         return Response(status=status.HTTP_204_NO_CONTENT)
