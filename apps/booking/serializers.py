@@ -71,7 +71,7 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
     # Customer fields
     phone_number = serializers.CharField(max_length=12)
     address = serializers.CharField(max_length=300, allow_blank=True, required=False)
-    driver_licens_number = serializers.CharField(max_length=20)
+    driver_license_number = serializers.CharField(max_length=20)
     date_of_birth = serializers.DateField(required=False)
 
     # Booking fields
@@ -83,7 +83,7 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
     def validate(self, data):
         username = data.get('username')
-        driver_licens_number = data.get('driver_licens_number')
+        driver_license_number = data.get('driver_license_number')
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         vehicle = data.get('vehicle')
@@ -91,8 +91,8 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
         if User.objects.filter(username=username).exists():
             raise ValidationError({"username": "Username already exists."})
 
-        if Customer.objects.filter(driver_licens_number=driver_licens_number).exists():
-            raise ValidationError({"driver_licens_number": "Driver license number already exists."})
+        if Customer.objects.filter(driver_license_number=driver_license_number).exists():
+            raise ValidationError({"driver_license_number": "Driver license number already exists."})
 
         if start_date and end_date and end_date < start_date:
             raise ValidationError({"end_date": "End date must be on or after start date."})
@@ -118,7 +118,7 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
         customer_data = {
             'phone_number': validated_data.pop('phone_number'),
             'address': validated_data.pop('address', ''),
-            'driver_licens_number': validated_data.pop('driver_licens_number'),
+            'driver_license_number': validated_data.pop('driver_license_number'),
             'date_of_birth': validated_data.pop('date_of_birth', None),
         }
 

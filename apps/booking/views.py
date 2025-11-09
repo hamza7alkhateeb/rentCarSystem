@@ -140,7 +140,7 @@ class VersionOneCreateUserCustomerBookingView(APIView):
             "user_id": customer.user_id,
             "phone_number": customer.phone_number,
             "address": customer.address,
-            "driver_licens_number": customer.driver_licens_number,
+            "driver_license_number": customer.driver_license_number,
             "date_of_birth": customer.date_of_birth
         }
         booking_data = {
