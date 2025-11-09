@@ -5,7 +5,7 @@ from apps.vehicle.models import Vehicle
 from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.serializers import ValidationError
-from apps.authentication.serializers import UserSerializer
+from apps.authentication.serializers import CreateUserSerializer
 from apps.customer.serializers import CustomerSerializer
 from .enums import BookingStatus, PaymentMethod
 
@@ -35,7 +35,7 @@ class BookingSerializer(serializers.ModelSerializer):
                 raise ValidationError({"error": "This vehicle is not available in the selected period."})
         return data
 
-
+# Version 1 Serializer (User + Customer + Booking)
 class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
     # User fields
     username = serializers.CharField(max_length=150)
@@ -101,7 +101,12 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
 
         with transaction.atomic():
             user = User.objects.create_user(username=username, password=password)
-            customer = Customer.objects.create(user=user, **customer_data)
+
+            customer= Customer.objects.get(user=user)
+            for field, value in customer_data.items():
+                setattr(customer, field, value)
+            customer.save()
+
 
             booking = Booking(
                 customer=customer,
@@ -111,35 +116,43 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
                 payment_method=validated_data.get('payment_method', PaymentMethod.CASH.value),
                 notes=validated_data.get('notes', '')
             )
-            booking.save()
+            try:
+                booking.save()
+            except ValidationError as e:
+                raise ValidationError(e.message_dict if hasattr(e, "message_dict") else e.messages)
 
         return {'user': user, 'customer': customer, 'booking': booking}
 
 
+
 class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
-    user = UserSerializer()
+    user= CreateUserSerializer()
     customer = CustomerSerializer()
     booking = BookingSerializer()
 
     def create(self, validated_data):
         with transaction.atomic():
             user_data = validated_data.pop('user')
-            user_serializer = UserSerializer(data=user_data)
+            user_serializer = CreateUserSerializer(data=user_data)
             user_serializer.is_valid(raise_exception=True)
             user = user_serializer.save()
 
             customer_data = validated_data.pop("customer")
-            customer = Customer.objects.create(user=user, **customer_data)
+
+            customer = Customer.objects.get(user=user)
+
+            for field, value in customer_data.items():
+                setattr(customer, field, value)
+            customer.save()
 
             booking_data = validated_data.pop("booking")
-            booking = Booking.objects.create(
-                customer=customer,
-                vehicle=booking_data['vehicle'],
-                start_date=booking_data['start_date'],
-                end_date=booking_data['end_date'],
-                payment_method=booking_data.get('payment_method', PaymentMethod.CASH.value),
-                notes=booking_data.get('notes', '')
-            )
+
+            if isinstance(booking_data.get("vehicle"), Vehicle):
+                booking_data["vehicle"] = booking_data["vehicle"].id
+
+            booking_serializer = BookingSerializer(data=booking_data)
+            booking_serializer.is_valid(raise_exception=True)
+            booking = booking_serializer.save(customer=customer)
 
         return {
             "user": user,
