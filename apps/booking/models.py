@@ -1,6 +1,4 @@
 from django.db import models
-from django.utils import timezone
-from rest_framework.serializers import ValidationError
 from apps.customer.models import Customer
 from apps.vehicle.models import Vehicle
 from apps.booking.enums import BookingStatus,PaymentMethod
@@ -27,26 +25,6 @@ class Booking(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def clean(self):
-        today = timezone.localdate()
-
-        if self.start_date < today:
-            raise ValidationError("Start date cannot be in the past.")
-        if self.end_date < self.start_date:
-            raise ValidationError("End date must be after start date.")
-
-        overlapping = Booking.objects.filter(
-            vehicle=self.vehicle,
-            status__in=[BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value],
-            start_date__lte=self.end_date,
-            end_date__gte=self.start_date,
-        )
-        if self.pk:
-            overlapping = overlapping.exclude(pk=self.pk)
-
-        if overlapping.exists():
-            raise ValidationError("This vehicle is not available in the selected period.")
-
     @property
     def computed_total_price(self):
         if self.start_date and self.end_date and self.vehicle:
@@ -57,7 +35,6 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         if not self.total_price:
             self.total_price = self.computed_total_price
-        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

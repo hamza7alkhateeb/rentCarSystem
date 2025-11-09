@@ -8,6 +8,7 @@ from rest_framework.serializers import ValidationError
 from apps.authentication.serializers import CreateUserSerializer
 from apps.customer.serializers import CustomerSerializer
 from .enums import BookingStatus, PaymentMethod
+from django.utils import timezone
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -22,10 +23,22 @@ class BookingSerializer(serializers.ModelSerializer):
         vehicle = data.get('vehicle')
         instance = getattr(self, 'instance', None)
 
+        today = timezone.localdate()
+
+        if start_date and start_date < today:
+            raise serializers.ValidationError({
+                "start_date": "Start date cannot be in the past."
+            })
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError({
+                "end_date": "End date must be after start date."
+            })
+
         if start_date and end_date and vehicle:
             overlapping = Booking.objects.filter(
                 vehicle=vehicle,
-                status__in=[status.value for status in BookingStatus if status in [BookingStatus.PENDING, BookingStatus.CONFIRMED]],
+                status__in=[BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value],
                 start_date__lte=end_date,
                 end_date__gte=start_date
             )
@@ -34,6 +47,20 @@ class BookingSerializer(serializers.ModelSerializer):
             if overlapping.exists():
                 raise ValidationError({"error": "This vehicle is not available in the selected period."})
         return data
+
+    def create(self, validated_data):
+        booking = Booking(**validated_data)
+        booking.total_price = booking.computed_total_price
+        booking.save()
+        return booking
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.total_price = instance.computed_total_price
+        instance.save()
+        return instance
 
 # Version 1 Serializer (User + Customer + Booking)
 class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
