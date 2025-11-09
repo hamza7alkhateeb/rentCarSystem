@@ -13,10 +13,11 @@ class CustomerViewSet(viewsets.ViewSet):
     }
 
     def get_permissions(self):
-        try:
-            return [permission() for permission in self.permission_classes_by_action[self.action]]
-        except KeyError:
-            return []
+        permission_classes = self.permission_classes_by_action.get(
+            self.action,
+            [IsAuthenticated]
+        )
+        return [permission() for permission in permission_classes]
 
     def profile(self, request):
         customer = customer_repo.get_by_user(request.user)
