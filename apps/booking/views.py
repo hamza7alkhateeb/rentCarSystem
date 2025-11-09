@@ -162,9 +162,9 @@ class VersionOneCreateUserCustomerBookingView(APIView):
 
 
 class VersionTwoCreateUserCustomerBookingView(APIView):
+    permission_classes = [IsAdminUser]
     def post(self, request):
         serializer = VersionTwoCreateUserCustomerBookingSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            data = serializer.save()
-            return Response({"message": "Booking created successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Booking created successfully"}, status=status.HTTP_201_CREATED)
