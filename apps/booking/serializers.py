@@ -11,30 +11,46 @@ from .enums import BookingStatus, PaymentMethod
 from django.utils import timezone
 
 
+# ----------------------
+# Booking Serializer
+# ----------------------
 class BookingSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Booking model.
+    Handles validation and auto-calculation of total_price.
+    """
     class Meta:
         model = Booking
         fields = "__all__"
+        # total_price, created_at, updated_at, status, customer are read-only
         read_only_fields = ['total_price', 'created_at', 'updated_at', 'status','customer']
 
     def validate(self, data):
+        """
+        Custom validation for:
+            - start_date not in the past
+            - end_date >= start_date
+            - vehicle availability (no overlapping bookings)
+        """
         start_date = data.get('start_date')
         end_date = data.get('end_date')
         vehicle = data.get('vehicle')
-        instance = getattr(self, 'instance', None)
-
+        instance = getattr(self, 'instance', None)  # for updates
         today = timezone.localdate()
 
+        # Start date cannot be in the past
         if start_date and start_date < today:
             raise serializers.ValidationError({
                 "start_date": "Start date cannot be in the past."
             })
 
+        # End date must be after start date
         if start_date and end_date and end_date < start_date:
             raise serializers.ValidationError({
                 "end_date": "End date must be after start date."
             })
 
+        # Check for overlapping bookings for this vehicle
         if start_date and end_date and vehicle:
             overlapping = Booking.objects.filter(
                 vehicle=vehicle,
@@ -49,21 +65,36 @@ class BookingSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """
+        Create Booking instance and auto-compute total_price
+        """
         booking = Booking(**validated_data)
         booking.total_price = booking.computed_total_price
         booking.save()
         return booking
 
     def update(self, instance, validated_data):
+        """
+        Update Booking instance and recalculate total_price
+        """
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
         instance.total_price = instance.computed_total_price
         instance.save()
         return instance
 
-# Version 1 Serializer (User + Customer + Booking)
+
+# ----------------------
+# Version 1: Combined Serializer (User + Customer + Booking)
+# ----------------------
 class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
+    """
+    Handles creation of:
+        - User
+        - Customer
+        - Booking
+    in a single API call.
+    """
     # User fields
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
@@ -78,10 +109,19 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
     vehicle = serializers.PrimaryKeyRelatedField(queryset=Vehicle.objects.all())
     start_date = serializers.DateField()
     end_date = serializers.DateField()
-    payment_method = serializers.ChoiceField(choices=[(method.value, method.name.title()) for method in PaymentMethod])
+    payment_method = serializers.ChoiceField(
+        choices=[(method.value, method.name.title()) for method in PaymentMethod]
+    )
     notes = serializers.CharField(allow_blank=True, required=False)
 
     def validate(self, data):
+        """
+        Custom validation to:
+            - Check unique username
+            - Check unique driver license
+            - Validate booking dates
+            - Check vehicle availability
+        """
         username = data.get('username')
         driver_license_number = data.get('driver_license_number')
         start_date = data.get('start_date')
@@ -97,6 +137,7 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
         if start_date and end_date and end_date < start_date:
             raise ValidationError({"end_date": "End date must be on or after start date."})
 
+        # Vehicle availability check
         if vehicle and start_date and end_date:
             vehicle_id = vehicle.pk if isinstance(vehicle, Vehicle) else int(vehicle)
             is_conflicting = Booking.objects.filter(
@@ -105,13 +146,15 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
                 start_date__lt=end_date,
                 end_date__gt=start_date
             ).exists()
-
             if is_conflicting:
                 raise ValidationError({"vehicle": "Selected vehicle is not available for the given period."})
 
         return data
 
     def create(self, validated_data):
+        """
+        Create User, Customer, and Booking in one transaction.
+        """
         username = validated_data.pop('username')
         password = validated_data.pop('password')
 
@@ -127,14 +170,16 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
         end_date = validated_data['end_date']
 
         with transaction.atomic():
+            # Create User
             user = User.objects.create_user(username=username, password=password)
 
-            customer= Customer.objects.get(user=user)
+            # Get associated Customer (created via post_save signal)
+            customer = Customer.objects.get(user=user)
             for field, value in customer_data.items():
                 setattr(customer, field, value)
             customer.save()
 
-
+            # Create Booking
             booking = Booking(
                 customer=customer,
                 vehicle=vehicle,
@@ -151,29 +196,37 @@ class VersionOneCreateUserCustomerBookingSerializer(serializers.Serializer):
         return {'user': user, 'customer': customer, 'booking': booking}
 
 
-
+# ----------------------
+# Version 2: Nested Serializers (UserSerializer + CustomerSerializer + BookingSerializer)
+# ----------------------
 class VersionTwoCreateUserCustomerBookingSerializer(serializers.Serializer):
-    user= CreateUserSerializer()
+    """
+    Version 2 of the combined serializer using nested serializers:
+        - user: CreateUserSerializer
+        - customer: CustomerSerializer
+        - booking: BookingSerializer
+    """
+    user = CreateUserSerializer()
     customer = CustomerSerializer()
     booking = BookingSerializer()
 
     def create(self, validated_data):
         with transaction.atomic():
+            # Create User
             user_data = validated_data.pop('user')
             user_serializer = CreateUserSerializer(data=user_data)
             user_serializer.is_valid(raise_exception=True)
             user = user_serializer.save()
 
+            # Update Customer data
             customer_data = validated_data.pop("customer")
-
             customer = Customer.objects.get(user=user)
-
             for field, value in customer_data.items():
                 setattr(customer, field, value)
             customer.save()
 
+            # Create Booking
             booking_data = validated_data.pop("booking")
-
             if isinstance(booking_data.get("vehicle"), Vehicle):
                 booking_data["vehicle"] = booking_data["vehicle"].id
 
