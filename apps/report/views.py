@@ -14,6 +14,16 @@ from apps.booking.enums import BookingStatus
 # Dashboard
 # ----------------------------
 def reports_dashboard(request):
+    """
+    Dashboard view that provides a summary of the system:
+    - Total bookings
+    - Total revenue
+    - Bookings by status
+    - Total customers
+    - Total vehicles
+    - Logged-in user's name
+    This data is rendered on the dashboard HTML template.
+    """
     bookings_qs = get_filtered_bookings(request)
     vehicles_qs = Vehicle.objects.all()
     customers_qs = Customer.objects.all()
@@ -33,6 +43,11 @@ def reports_dashboard(request):
 # Bookings Report 
 # ----------------------------
 def bookings_report_view(request):
+    """
+    View for displaying a detailed bookings report.
+    Includes total bookings, total revenue, bookings by status,
+    filter options, and the full list of bookings.
+    """
     qs = get_filtered_bookings(request)
     context = {
         "bookings": qs,
@@ -49,6 +64,11 @@ def bookings_report_view(request):
     return render(request, "report/bookings_report.html", context)
 
 def bookings_report_pdf(request):
+    """
+    Generates a PDF version of the bookings report.
+    Uses the same data as bookings_report_view and renders it
+    into a PDF file which is returned as an HTTP response.
+    """
     qs = get_filtered_bookings(request)
     context = {
         "bookings": qs,
@@ -66,6 +86,11 @@ def bookings_report_pdf(request):
 # Vehicle Utilization Report 
 # ----------------------------
 def vehicle_utilization_report(request):
+    """
+    View for displaying vehicle utilization for the current month.
+    Calculates how much each vehicle was used and displays the data
+    along with the current month and generation timestamp.
+    """
     vehicles = Vehicle.objects.all()
     today = datetime.today().date()
     days_in_month = today.day
@@ -81,6 +106,11 @@ def vehicle_utilization_report(request):
     return render(request, "report/vehicle_utilization_report.html", context)
 
 def vehicle_utilization_report_pdf(request):
+    """
+    Generates a PDF version of the vehicle utilization report.
+    Includes data for each vehicle, month name, timestamp, and
+    logged-in user's name.
+    """
     vehicles = Vehicle.objects.all()
     today = datetime.today().date()
     days_in_month = today.day
