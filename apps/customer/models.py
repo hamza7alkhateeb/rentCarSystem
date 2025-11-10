@@ -1,7 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
+
 class Customer(models.Model):
+    """ This model extends the default Django User model
+        by adding extra information specific to customers, such as
+        phone number, address, license details, and date of birth"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
     phone_number = models.CharField(max_length=12)
     address = models.CharField(max_length=300, null=True, blank=True)
@@ -9,7 +14,11 @@ class Customer(models.Model):
     driver_license_number = models.CharField(max_length=20, null=True, blank=True )
     date_of_birth = models.DateField(null=True, blank=True)
 
+
     def get_incomplete_fields(self):
+        """ This function checks for any missing (empty) fields
+            in the customer's profile and returns them as a list
+            It helps to identify which fields the user hasn't completed yet"""
         missing_fields = []
         if not self.phone_number:
             missing_fields.append("phone_number")
@@ -24,6 +33,9 @@ class Customer(models.Model):
         return missing_fields
 
     def is_profile_complete(self):
+        """ This function checks if the customer's profile is complete or not
+              by verifying that there are no missing fields.
+              It returns True if all required data is filled, otherwise False."""
         return len(self.get_incomplete_fields()) == 0
     
     def __str__(self):
