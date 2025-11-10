@@ -1,16 +1,20 @@
 from django.db import models
-
+from .enums import VehicleType
 class Vehicle(models.Model):
-    class VehicleType(models.TextChoices):
-        CAR = 'car', 'Car'
-        VAN = 'van', 'Van'
-        TRUCK = 'truck', 'Truck'
-        MOTORBIKE = 'motorbike', 'Motorbike'
+    """
+    Represents a vehicle in the rental system.
 
+    Stores essential details such as brand, model, pricing, category, and timestamps.
+    Uses Enum-based choices (VehicleType) for `vehicle_type`.
+    """
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     year = models.PositiveSmallIntegerField()
-    vehicle_type = models.CharField(max_length=20,choices=VehicleType.choices, default=VehicleType.CAR)
+    vehicle_type = models.CharField(
+        max_length=20,
+        choices=[(type.value, type.name.title()) for type in VehicleType],
+        default=VehicleType.CAR.value,
+    )
     daily_rate = models.DecimalField(max_digits=8,decimal_places=2)
     plate_number = models.CharField(max_length=20,unique=True)
     description = models.TextField(blank=True, null=True)
