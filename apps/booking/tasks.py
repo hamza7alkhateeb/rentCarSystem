@@ -1,18 +1,23 @@
 from celery import shared_task
 from django.utils import timezone
 from .models import Booking
+import logging
+from .enums import BookingStatus
+
+logger = logging.getLogger(__name__)
 
 @shared_task
 def update_status():
-    now = timezone.now()
-    completed =Booking.objects.filter(
-        status=Booking.BookingStatus.CONFIRMED,
-        end_date__lt=now
+
+    today = timezone.now().date()
+
+    completed = Booking.objects.filter(
+        status=BookingStatus.CONFIRMED.value,
+        end_date__lt=today
     )
 
-    for booking in completed:
-        booking.status = Booking.BookingStatus.COMPLETED
-        booking.save()
+    count = completed.update(status=BookingStatus.COMPLETED.value)
 
-    return f"Status updated{completed.count()} "
+    logger.info(f"Auto-completed {count} bookings")
 
+    return f"Updated {count} bookings to COMPLETED status"
