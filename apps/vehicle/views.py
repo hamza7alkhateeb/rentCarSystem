@@ -9,6 +9,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.decorators import action
 import logging
+from rest_framework.pagination import PageNumberPagination
+
 logger = logging.getLogger(__name__)
 
 class IsAdminOrIsAuthenticated(BasePermission):
@@ -21,6 +23,7 @@ class IsAdminOrIsAuthenticated(BasePermission):
 class VehicleViewSet(ViewSet):
     permission_classes = [IsAdminOrIsAuthenticated]
     repository = VehicleRepository()
+    pagination_class = PageNumberPagination
 
     def list(self, request):
         filters={
@@ -29,8 +32,11 @@ class VehicleViewSet(ViewSet):
             if request.query_params.get(key)
         }
         vehicles = self.repository.get_all(filters)
-        serializer = VehicleSerializer(vehicles, many=True)
-        return Response(serializer.data)
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(vehicles, request)
+        serializer = VehicleSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
     @action(detail=False, methods=['get'],url_path='available')
     def available(self,request):
         start = request.query_params.get('start_date')
