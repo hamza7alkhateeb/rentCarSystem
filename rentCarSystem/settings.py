@@ -173,6 +173,19 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
+# CACHE
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('CACHE_URL'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
 # LOGGER SETTINGS
 LOGGING = {
     'version': 1,

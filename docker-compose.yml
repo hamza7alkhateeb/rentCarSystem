@@ -1,0 +1,77 @@
+
+services:
+  web:
+    build: .
+    container_name: rent_car_django_app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - db
+      - rabbitmq
+    env_file:
+      - .env
+
+  redis:
+    image: redis:latest
+    container_name: rent_car_redis_server
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rent_car_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  db:
+    image: postgres:15
+    container_name: rent_car_postgres_db
+    environment:
+      POSTGRES_DB: rentcar
+      POSTGRES_USER: hamza
+      POSTGRES_PASSWORD: 12345
+    volumes:
+      - rent_car_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  celery:
+    build: .
+    container_name: rent_car_celery_worker
+    command: celery -A rentCarSystem worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+      - web
+      - rabbitmq
+
+
+
+  celery_beat:
+    build: .
+    container_name: rent_car_celery_beat
+    command: celery -A rentCarSystem beat -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+      - web
+      - rabbitmq
+
+
+
+
+volumes:
+  rent_car_postgres_data:
