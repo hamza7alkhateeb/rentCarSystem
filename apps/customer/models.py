@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from .emums import CustomerStatus
 
 
 class Customer(models.Model):
@@ -14,6 +14,9 @@ class Customer(models.Model):
     driver_license_number = models.CharField(max_length=20, null=True, blank=True )
     date_of_birth = models.DateField(null=True, blank=True)
 
+    # Customer status => Verified, Unverified or blocked
+
+    status = models.CharField(max_length=20, choices=CustomerStatus.choices(),default=CustomerStatus.UNVERIFIED.value)
 
     def get_incomplete_fields(self):
         """ This function checks for any missing (empty) fields

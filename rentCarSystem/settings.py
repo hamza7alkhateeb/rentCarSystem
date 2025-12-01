@@ -166,11 +166,21 @@ CELERY_TIMEZONE = config('CELERY_TIMEZONE')
 
 CELERY_BEAT_SCHEDULE = {
     'update_status': {
-        'task': 'booking.tasks.update_status',
+        'task': 'apps.booking.tasks.update_status',
         'schedule': timedelta(
             hours=config('CELERY_BEAT_SCHEDULE_HOURS', cast=int, default=24)
         )
-    }
+    },
+
+    "sync_customers_status_every_10_min":{
+        "task": "apps.customer.tasks.sync_customer_status_task",
+        "schedule": timedelta(minutes=10)
+    },
+
+    "auto_cancel_booking_expired_every_10_min":{
+        "task": "apps.booking.tasks.auto_cancel_booking_expired",
+        "schedule": timedelta(minutes=10)
+    },
 }
 
 # CACHE
