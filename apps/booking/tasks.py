@@ -3,7 +3,7 @@ from django.utils import timezone
 from .models import Booking
 import logging
 from .enums import BookingStatus
-
+from datetime import timedelta
 # Initialize a logger for this module
 logger = logging.getLogger(__name__)
 
@@ -37,3 +37,14 @@ def update_status():
     logger.info(f"Auto-completed {count} bookings")
 
     return f"Updated {count} bookings to COMPLETED status"
+
+
+
+@shared_task
+def auto_cancel_booking_expired():
+    expired_time=timezone.now() - timedelta(hours=24)
+    expired_bookings = Booking.objects.filter(status=BookingStatus.PENDING.value,created_at__lt=expired_time)
+    count = expired_bookings.count()
+    expired_bookings.update(status=BookingStatus.CANCELLED.value)
+
+    return f"Updated {count} bookings to CANCELLED status"
