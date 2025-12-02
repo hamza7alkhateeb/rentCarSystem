@@ -1,7 +1,9 @@
 from rest_framework import status
+from rest_framework.views import APIView
+
 from .repository import VehicleRepository
 from .serializers import VehicleSerializer
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission, SAFE_METHODS , IsAuthenticated
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework.viewsets import ViewSet
@@ -10,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 import logging
 from rest_framework.pagination import PageNumberPagination
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -179,3 +182,37 @@ class VehicleViewSet(ViewSet):
         )
         self.repository.delete(vehicle)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+
+class TestStoreCacheView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request):
+
+        key = request.data.get('key')
+        data=request.data.get('data')
+        if not key:
+            return Response({"error": "key field is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if data is None:
+            return Response({"error": "data field is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cache.set(key, data, timeout=300)
+        return Response({"message": "Data stored in cache successfully!"}, status=status.HTTP_200_OK)
+
+
+
+    def get(self,request):
+        key = request.query_params.get('key', None)
+        if not key:
+            return Response({"error": "key field is required"}, status=status.HTTP_400_BAD_REQUEST)
+        data = cache.get(key)
+        if data is None:
+            return Response({"message": "No cached data currently"}, status=status.HTTP_200_OK)
+        return Response({"cached_data": data}, status=status.HTTP_200_OK)
+
+
+
+
+
