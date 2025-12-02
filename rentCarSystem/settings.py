@@ -172,14 +172,14 @@ CELERY_BEAT_SCHEDULE = {
         )
     },
 
-    "sync_customers_status_every_10_min":{
-        "task": "apps.customer.tasks.sync_customer_status_task",
-        "schedule": timedelta(minutes=10)
+    "sync_customers_status_every_10_hours":{
+        "task": "apps.customer.tasks.sync_customers_status_task",
+        "schedule": timedelta(hours=10)
     },
 
-    "auto_cancel_booking_expired_every_10_min":{
+    "auto_cancel_booking_expired_every_day":{
         "task": "apps.booking.tasks.auto_cancel_booking_expired",
-        "schedule": timedelta(minutes=10)
+        "schedule": timedelta(days=1)
     },
 }
 
